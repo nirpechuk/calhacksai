@@ -1,21 +1,21 @@
-import { defineConfig } from "wxt";
+import { defineConfig } from 'wxt';
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
-import tailwindcss from "@tailwindcss/vite";
+import tailwindcss from '@tailwindcss/vite';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-  srcDir: "src",
-  modules: ["@wxt-dev/module-svelte"],
+  srcDir: 'src',
+  modules: ['@wxt-dev/module-svelte'],
   manifest: {
     name: "Name",
     description: "My extension description",
-    permissions: ["storage", "activeTab", "tabs"],
+    permissions: ["storage"],
     web_accessible_resources: [
       {
         resources: ["dashboard.html"],
-        matches: ["*://*/*"],
-      },
+        matches: ["*://*/*"]
+      }
     ],
     // entrypoints: {
     //   // Existing entry points
@@ -27,10 +27,14 @@ export default defineConfig({
     // },
   },
   vite: () => ({
-    plugins: [wasm(), topLevelAwait(), tailwindcss()],
+    plugins: [
+      wasm(),
+      topLevelAwait(),
+      tailwindcss()
+    ],
   }),
 
   runner: {
-    startUrls: ["https://www.google.com"],
-  },
+    startUrls: ['https://www.google.com']
+  }
 });

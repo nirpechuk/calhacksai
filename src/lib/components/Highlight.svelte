@@ -41,7 +41,6 @@
   };
 
   const highlightText = (keyword: string) => {
-    clearHighlights();
     if (!keyword.trim()) return;
 
     const regex = new RegExp(`(${keyword})`, 'gi');

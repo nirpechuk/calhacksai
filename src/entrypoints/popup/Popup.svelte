@@ -5,7 +5,7 @@
 
 <main class="p-4 min-w-[300px] min-h-[300px] grid grid-rows-[auto_1fr] gap-4">
   <h1 class="text-3xl font-bold">Popup</h1>
-  
+
   <!-- Neon Pink (broke) -->
   <Counter class="bg-neon-pink" />
 

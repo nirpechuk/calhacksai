@@ -16,11 +16,12 @@
     "test:letta": "npx tsx src/entrypoints/background/agents/lettaAgentTest.ts"
   },
   "dependencies": {
-    "@webext-core/messaging": "^2.3.0",
     "@letta-ai/letta-client": "^0.1.132",
+    "@webext-core/messaging": "^2.3.0",
     "dotenv": "^16.5.0",
     "mode-watcher": "^1.0.8",
-    "runed": "^0.29.0"
+    "runed": "^0.29.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.0",

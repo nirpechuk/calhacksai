@@ -1,5 +1,5 @@
 import { extensionMessenger } from "@/utils/messaging";
-import { createLettaAgent } from "./agents/lettaAgent";
+import { createAgent, LettaAgent } from "./agents";
 
 // const prompt = `
 // You are a fact checker. You will investigate all facts that are even slightly non-reputable by using
@@ -13,13 +13,13 @@ const prompt = `Return the container of the first instance of the word "svelte".
 export default defineBackground(() => {
   console.log('Background script loaded', { id: browser.runtime.id });
 
-  const agent = createLettaAgent(import.meta.env.VITE_LETTA_AGENT_ID || '');
-  agent.initialize(import.meta.env.VITE_LETTA_API_KEY || ''); // TODO: Can't await here what to do?
+  const agent = createAgent(LettaAgent, import.meta.env.VITE_LETTA_AGENT_ID || '', prompt);
+  agent.initialize(import.meta.env.VITE_LETTA_API_KEY || '');
 
   extensionMessenger.onMessage('activate', async (message) => {
     console.log('activate', message);
 
-    const result = await agent.getActions(message.data, prompt);
+    const result = await agent.getActions(message.data);
     console.log('result', result);
 
     if (message.sender.tab?.id) {

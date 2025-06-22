@@ -16,16 +16,12 @@ async function testLettaAgent() {
 
   try {
     // Create agent
-    const agent = createLettaFactCheckerAgent();
-    console.log('✅ Agent created successfully');
-
-    // Set agent ID (you'll need to create an agent in Letta console first)
     const agentId = process.env.LETTA_AGENT_ID || '';
     if (!agentId) {
       throw new Error('LETTA_AGENT_ID environment variable is required. Create an agent in Letta console and get its ID.');
     }
-    agent.setAgentId(agentId);
-    console.log(`📋 Using agent ID: ${agentId}`);
+    const agent = createLettaFactCheckerAgent(agentId);
+    console.log('✅ Agent created successfully with ID: ', agentId);
 
     // Initialize with API key
     const apiKey = process.env.LETTA_API_KEY || '';
@@ -34,8 +30,7 @@ async function testLettaAgent() {
     }
     
     await agent.initialize(apiKey);
-    console.log('✅ Agent initialized successfully');
-    console.log(`📋 Agent ID: ${agent.getAgentId()}`);
+    console.log('✅ Letta service initialized successfully');
 
     // Test with a simple DOM
     const testDom = `

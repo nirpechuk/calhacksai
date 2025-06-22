@@ -16,12 +16,13 @@ export class LettaFactCheckerAgent implements IAgent {
   private agentId?: string;
   private isInitialized = false;
 
-  constructor() {
+  constructor(agentId: string) {
     // Initialize with default Letta Cloud configuration
     this.client = new LettaClient({
       baseUrl: 'https://app.letta.com',
       token: '',
     });
+    this.agentId = agentId;
   }
 
   /**
@@ -154,6 +155,6 @@ export class LettaFactCheckerAgent implements IAgent {
 /**
  * Create a new Letta fact checker agent instance
  */
-export function createLettaFactCheckerAgent(): LettaFactCheckerAgent {
-  return new LettaFactCheckerAgent();
+export function createLettaFactCheckerAgent(agentId: string): LettaFactCheckerAgent {
+  return new LettaFactCheckerAgent(agentId);
 }

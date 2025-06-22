@@ -1,5 +1,5 @@
 import { agentActionSchema } from '@/utils/constants';
-import type { AgentAction, ActionType, AgentResult } from './types';
+import type { AgentAction, ActionType, AgentResult } from '@/utils/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export abstract class Agent {

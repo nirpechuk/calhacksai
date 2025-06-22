@@ -1,4 +1,4 @@
-import type { AgentResult } from './types';
+import type { AgentResult } from '@/utils/types';
 import { LettaClient } from '@letta-ai/letta-client';
 import { Agent } from './agent';
 

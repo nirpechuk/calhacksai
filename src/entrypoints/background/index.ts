@@ -20,10 +20,7 @@ export default defineBackground(() => {
     console.log('activate', message);
 
     const result = await agent.getActions(message.data);
-    console.log('result', result);
 
-    if (message.sender.tab?.id) {
-      extensionMessenger.sendMessage('highlight', result.actions[0].targetElement, message.sender.tab.id);
-    }
+    return [result];
   });
 });

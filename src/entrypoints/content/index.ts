@@ -2,6 +2,7 @@ import '@/app.css';
 import { mount } from "svelte";
 import Highlight from "@/lib/components/Highlight.svelte";
 import { extensionMessenger, websiteMessenger } from '@/utils/messaging';
+import { ActionType } from '@/utils/types';
 
 const highlightActions = [
   {
@@ -23,72 +24,44 @@ export default defineContentScript({
    */
   allFrames: false,
   matches: ['*://*/*'],
-  main(ctx) {
+  async main(ctx) {
     websiteMessenger.removeAllListeners();
-    injectAnimationStyles();
     console.log('Content script loaded', { id: browser.runtime.id, manifest: browser.runtime.getManifest() });
 
-    // ================================
-    // Initialize Message Listeners
-    // ================================
-    extensionMessenger.onMessage('highlight', (message) => {
-      console.log('highlight', message);
-      highlightActions.forEach((action) => {
-        mount(Highlight, {
-          target: document.querySelector(message.data) as HTMLElement,
-          context: new Map([["wxt:context", ctx]]),
-          props: {
-            action: action,
-          }
-        });
-      });
-    });
+    const annotations = document.createElement('div');
+    annotations.id = 'truely-annotations';
+    document.body.appendChild(annotations);
 
     // ================================
     // Send Message to Background to Run
     // ================================
     const visibleContent = document.body.querySelector('#uOz6nd')!.innerHTML.slice(0, 5000);
-    extensionMessenger.sendMessage('activate', visibleContent);
+    const results = await extensionMessenger.sendMessage('activate', visibleContent);
+
+    results.forEach((result) => {
+      console.log('result', result);
+
+      result.actions.forEach((action) => {
+        switch (action.type) {
+          case ActionType.HIGHLIGHT:
+            const targetElement = document.querySelector(action.targetElement);
+            if (!targetElement) {
+              console.warn(`Target element not found for selector: ${action.targetElement}`);
+              return;
+            }
+            mount(Highlight, {
+              target: targetElement,
+              context: new Map([["wxt:context", ctx]]),
+              props: {
+                action: action,
+              }
+            });
+            break;
+          default:
+            console.log(`Unsupported action type: ${action.type}\nAction: ${JSON.stringify(null, null, 2)}`);
+            break;
+        }
+      });
+    });
   }
 });
-
-
-// Animation styles - only need to be injected once
-const ANIMATION_STYLE_ID = 'text-highlighter-animation-style';
-const HIGHLIGHT_MARK_CLASS = 'text-highlighter-mark';
-
-const injectAnimationStyles = () => {
-  if (document.getElementById(ANIMATION_STYLE_ID)) {
-    return; // Styles already injected
-  }
-  const style = document.createElement('style');
-  style.id = ANIMATION_STYLE_ID;
-  style.textContent = `
-    @keyframes highlight-wipe-in {
-      from { background-size: 0% 100%; }
-      to { background-size: 100% 100%; }
-    }
-
-    .${HIGHLIGHT_MARK_CLASS} {
-      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.5), rgba(196, 181, 253, 0.5));
-      background-repeat: no-repeat;
-      background-size: 0% 100%;
-      border-bottom: 2px solid rgba(196, 181, 253, 1);
-      background-color: transparent;
-      color: inherit;
-      animation: highlight-wipe-in 0.4s ease-out forwards;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border-radius: 3px;
-      padding: 1px 2px;
-    }
-
-    .${HIGHLIGHT_MARK_CLASS}:hover {
-      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.7), rgba(196, 181, 253, 0.7));
-      transform: scale(1.02);
-      box-shadow: 0 2px 8px rgba(196, 181, 253, 0.3);
-      border-radius: 4px;
-    }
-  `;
-  document.head.appendChild(style);
-};

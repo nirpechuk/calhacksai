@@ -1,12 +1,11 @@
 import { defineExtensionMessaging, GetDataType } from '@webext-core/messaging';
 import { defineWindowMessaging } from '@webext-core/messaging/page';
-
-
+import { AgentResult } from './types';
 
 interface ProtocolMap {
     // TODO: add api schema here
-    activate(dom: string): void;
-    highlight(selector: string): void;
+    activate(dom: string): AgentResult[];
+    // highlight(selector: string): void;
 }
 
 // NOTE: this is to send messages between the background script and the content script

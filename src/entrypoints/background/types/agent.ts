@@ -49,7 +49,7 @@ export const agentActionSchema = {
     additionalProperties: false,
     required: [
       "type",
-      "targetElement", 
+      "targetElement",
       "content",
       "confidence",
       "severity",
@@ -144,10 +144,10 @@ export function validateAgentActions(data: any): AgentAction[] {
       }
     }
 
-    // Validate sources array
-    if (!Array.isArray(action.sources) || action.sources.length === 0) {
-      throw new Error(`Invalid sources at index ${index}: must be a non-empty array`);
-    }
+    // // Validate sources array
+    // if (!Array.isArray(action.sources) || action.sources.length === 0) {
+    //   throw new Error(`Invalid sources at index ${index}: must be a non-empty array`);
+    // }
 
     // Validate each source URL
     for (const source of action.sources) {

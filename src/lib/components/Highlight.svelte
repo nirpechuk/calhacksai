@@ -1,7 +1,7 @@
 <script lang="ts">
     import { AgentAction } from '@/utils/types';
     import { onMount, onDestroy } from 'svelte';
-    import { getContext } from 'svelte';
+    import Popup from './Popup.svelte';
     import { HIGHLIGHT_MARK_CLASS } from '@/utils/constants';
     // Props - now takes a single action instead of an array
     let {
@@ -12,41 +12,51 @@
       class?: string;
     }>();
 
-    // Get WXT context if available
-    const ctx = getContext('wxt:context');
+    let popupVisible = $state(false);
+    let iconRect: DOMRect | null = $state(null);
+    let hideTimer: number | null = null;
+
+    const startHideTimer = () => {
+      hideTimer = window.setTimeout(() => {
+        popupVisible = false;
+      }, 200);
+    };
+
+    const cancelHideTimer = () => {
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+    };
+
+    const showPopup = (event: Event) => {
+      cancelHideTimer();
+      const markEl = event.currentTarget as HTMLElement;
+      iconRect = markEl.getBoundingClientRect();
+      popupVisible = true;
+    };
 
     const clearHighlights = () => {
       // Only clear highlights for this specific keyword
-      const existingMarks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.content}"]`);
-      existingMarks.forEach(mark => {
-        const parent = mark.parentNode;
+      const existingSpans = document.querySelectorAll(`span[data-highlight="true"][data-content="${action.content}"]`);
+      existingSpans.forEach(span => {
+        const parent = span.parentNode;
         if (parent) {
-          parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+          parent.replaceChild(document.createTextNode(span.textContent || ''), span);
           parent.normalize(); // Merge adjacent text nodes
         }
       });
     };
 
     const addEventListeners = () => {
-      // Find marks that contain this specific keyword
-      const marks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.content}"]`);
-      marks.forEach(mark => {
-        const markText = mark.textContent || '';
-        // Only add listeners if this mark contains our keyword
-        if (markText.toLowerCase().includes(action.content.toLowerCase())) {
-          // Add hover event
-          if (action.onHover) {
-            mark.addEventListener('mouseenter', () => {
-              action.onHover!();
-            });
-          }
-
-          // Add click event
-          if (action.onClick) {
-            mark.addEventListener('click', () => {
-              action.onClick!();
-            });
-          }
+      // Find spans that contain this specific keyword
+      const spans = document.querySelectorAll(`span[data-highlight="true"][data-content="${action.content}"]`);
+      spans.forEach(span => {
+        const spanText = span.textContent || '';
+        // Only add listeners if this span contains our keyword
+        if (spanText.toLowerCase().includes(action.content.toLowerCase())) {
+          span.addEventListener('mouseenter', showPopup);
+          span.addEventListener('mouseleave', startHideTimer);
         }
       });
     };
@@ -74,7 +84,7 @@
           const nodeValue = node.nodeValue;
           if (nodeValue && regex.test(nodeValue)) {
             const span = document.createElement('span');
-            span.innerHTML = nodeValue.replace(regex, `<mark class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true" data-content="${content}">$1</mark>`);
+            span.innerHTML = nodeValue.replace(regex, `<span class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true" data-content="${content}">$1</span>`);
             node.parentNode!.replaceChild(span, node);
           }
         } else if (node.nodeType === 1) { // ELEMENT_NODE
@@ -107,6 +117,10 @@
       clearHighlights();
     });
   </script>
+
+  {#if popupVisible && iconRect}
+    <Popup {action} {iconRect} onMouseEnter={cancelHideTimer} onMouseLeave={startHideTimer} />
+  {/if}
 
   <div data-highlight-container class={props.class || ''}>
     <!-- This component doesn't render visible content, it just manages highlights -->

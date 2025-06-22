@@ -1,6 +1,6 @@
 import '@/app.css';
 import { mount } from "svelte";
-import Highlight from "@/lib/components/Highlight.svelte";
+import { Highlight, Note } from "@/lib/components";
 import { extensionMessenger, websiteMessenger } from '@/utils/messaging';
 import { ActionType, AgentResult } from '@/utils/types';
 import { HIGHLIGHT_MARK_CLASS } from '@/utils/constants';
@@ -31,16 +31,22 @@ export default defineContentScript({
       result.actions.forEach((action) => {
         switch (action.type) {
           case ActionType.HIGHLIGHT:
+          case ActionType.UNDERLINE:
             mount(Highlight, {
               target: annotations,
               context: new Map([["wxt:context", ctx]]),
-              props: {
-                action: action,
-              }
+              props: { action }
+            });
+            break;
+          case ActionType.ADD_NOTE:
+            mount(Note, {
+              target: annotations,
+              context: new Map([["wxt:context", ctx]]),
+              props: { action }
             });
             break;
           default:
-            console.log(`Unsupported action type: ${action.type}\nAction: ${JSON.stringify(null, null, 2)}`);
+            console.log(`Unsupported action type: ${action.type}\nAction: ${JSON.stringify(action, null, 2)}`);
             break;
         }
       });
@@ -56,25 +62,41 @@ const injectAnimationStyles = () => {
       to { background-size: 100% 100%; }
     }
 
+    @keyframes underline-wipe-in {
+      from { transform: scaleX(0); }
+      to   { transform: scaleX(1); }
+    }
+
     .${HIGHLIGHT_MARK_CLASS} {
-      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.5), rgba(196, 181, 253, 0.5));
+      position: relative;
+      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.3), rgba(196, 181, 253, 0.3));
       background-repeat: no-repeat;
       background-size: 0% 100%;
-      border-bottom: 2px solid rgba(196, 181, 253, 1);
       background-color: transparent;
-      color: inherit;
-      animation: highlight-wipe-in 0.4s ease-out forwards;
+      border-radius: 3px;
+      padding: 2.5px 1px;
       cursor: pointer;
       transition: all 0.2s ease;
+      animation: highlight-wipe-in 0.4s ease-out forwards;
+    }
+
+    .${HIGHLIGHT_MARK_CLASS}::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: 0px;
+      width: 100%;
+      height: 3px;
+      background-color: rgba(196, 181, 253, 1);
       border-radius: 3px;
-      padding: 1px 2px;
+      transform-origin: left;
+      animation: underline-wipe-in 0.4s ease-out forwards;
     }
 
     .${HIGHLIGHT_MARK_CLASS}:hover {
-      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.7), rgba(196, 181, 253, 0.7));
+      background-color: rgba(196, 181, 253, 0.4);
       transform: scale(1.02);
       box-shadow: 0 2px 8px rgba(196, 181, 253, 0.3);
-      border-radius: 4px;
     }
   `;
   document.head.appendChild(style);

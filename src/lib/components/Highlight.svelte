@@ -6,9 +6,11 @@
     // Props - now takes a single action instead of an array
     let {
       action,
+      underline_only = false,
       ...props
     } = $props<{
       action: AgentAction;
+      underline_only?: boolean;
       class?: string;
     }>();
 
@@ -84,7 +86,12 @@
           const nodeValue = node.nodeValue;
           if (nodeValue && regex.test(nodeValue)) {
             const span = document.createElement('span');
-            span.innerHTML = nodeValue.replace(regex, `<span class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true" data-content="${content}">$1</span>`);
+            const klasses = [HIGHLIGHT_MARK_CLASS];
+            if (underline_only) {
+              klasses.push('underline-only');
+            }
+            const classString = klasses.join(' ');
+            span.innerHTML = nodeValue.replace(regex, `<span class="${classString}" data-highlight="true" data-content="${content}">$1</span>`);
             node.parentNode!.replaceChild(span, node);
           }
         } else if (node.nodeType === 1) { // ELEMENT_NODE

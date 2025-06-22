@@ -45,6 +45,15 @@ export default defineContentScript({
             sources: ['https://github.com/users/nirpechuk/projects/2/views/1']
           },
           {
+            type: ActionType.UNDERLINE,
+            targetElement: '#p_1_2',
+            content: 'investigation strongly suggests that the author’s ',
+            confidence: 0.9,
+            severity: 0.9,
+            explanation: 'This is a test',
+            sources: ['https://github.com/users/nirpechuk/projects/2/views/1']
+          },
+          {
             type: ActionType.ADD_NOTE,
             targetElement: '#p_1_3',
             content: 'I’ll throw my 2 cents in here.',
@@ -70,7 +79,10 @@ export default defineContentScript({
             mount(Highlight, {
               target: annotations,
               context: new Map([["wxt:context", ctx]]),
-              props: { action }
+              props: {
+                action,
+                underline_only: action.type === ActionType.UNDERLINE
+              }
             });
             break;
           case ActionType.ADD_NOTE:
@@ -271,6 +283,11 @@ const injectAnimationStyles = () => {
       animation: highlight-wipe-in 0.4s ease-out forwards;
     }
 
+    .${HIGHLIGHT_MARK_CLASS}.underline-only {
+      background: transparent;
+      animation: none;
+    }
+
     .${HIGHLIGHT_MARK_CLASS}::after {
       content: '';
       position: absolute;
@@ -288,6 +305,11 @@ const injectAnimationStyles = () => {
       background-color: rgba(196, 181, 253, 0.4);
       transform: scale(1.02);
       box-shadow: 0 2px 8px rgba(196, 181, 253, 0.3);
+    }
+
+    .${HIGHLIGHT_MARK_CLASS}.underline-only:hover {
+      background-color: transparent;
+      box-shadow: none;
     }
   `;
   document.head.appendChild(style);

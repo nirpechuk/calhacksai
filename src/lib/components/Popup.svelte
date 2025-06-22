@@ -42,8 +42,8 @@
       left = vw - popupRect.width - margin;
     }
 
-    popupEl.style.top = `${top}px`;
-    popupEl.style.left = `${left}px`;
+    popupEl.style.top = `${top + window.scrollY}px`;
+    popupEl.style.left = `${left + window.scrollX}px`;
     popupEl.style.opacity = '1';
 
     return () => {
@@ -92,7 +92,7 @@
 
 <style>
   .note-popup-global {
-    position: fixed;
+    position: absolute;
     opacity: 0;
     z-index: 10000;
     width: 320px;

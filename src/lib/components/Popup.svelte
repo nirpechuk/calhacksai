@@ -97,7 +97,7 @@
     z-index: 10000;
     width: 320px;
     background-color: white;
-    border: 2px solid #e0cffc;
+    border: 2px solid rgba(196, 181, 253, 1);
     border-radius: 8px;
     padding: 16px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);

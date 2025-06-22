@@ -89,11 +89,37 @@
 {/if}
 
 <style>
+  @keyframes expand-margin {
+    from {
+      margin-right: 0;
+    }
+    to {
+      margin-right: 6px;
+    }
+  }
+
+  @keyframes fade-in-scale-up {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  :global(.note-annotation-wrapper) {
+    position: relative;
+    animation: expand-margin 0.3s ease-out forwards;
+  }
+
   :global(.note-annotation-container) {
     position: absolute;
     top: -6px;
-    right: -6px;
-    z-index: 1; 
+    right: -4px;
+    z-index: 1;
+    animation: fade-in-scale-up 0.3s ease-out forwards;
   }
 
   :global(.note-icon-wrapper) {
@@ -105,7 +131,7 @@
   :global(.note-icon) {
     width: 12px;
     height: 12px;
-    background-color: #e0cffc;
+    background-color: rgba(196, 181, 253, 1);
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

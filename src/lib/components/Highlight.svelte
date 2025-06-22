@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { getContext } from 'svelte';
-  
+
     // Define the structure for a single highlight action
     interface HighlightAction {
       keyword: string;
@@ -9,7 +9,7 @@
       onHover?: () => void;
       onClick?: () => void;
     }
-  
+
     // Props - now takes a single action instead of an array
     let {
       action,
@@ -18,13 +18,13 @@
       action: HighlightAction;
       class?: string;
     }>();
-  
+
     // Get WXT context if available
     const ctx = getContext('wxt:context');
-  
+
     // Use the same constants as defined in content.ts
     const HIGHLIGHT_MARK_CLASS = 'text-highlighter-mark';
-  
+
     const clearHighlights = () => {
       // Only clear highlights for this specific keyword
       const existingMarks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.keyword}"]`);
@@ -36,7 +36,7 @@
         }
       });
     };
-  
+
     const addEventListeners = () => {
       // Find marks that contain this specific keyword
       const marks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.keyword}"]`);
@@ -50,7 +50,7 @@
               action.onHover!();
             });
           }
-  
+
           // Add click event
           if (action.onClick) {
             mark.addEventListener('click', () => {
@@ -60,20 +60,20 @@
         }
       });
     };
-  
+
     const highlightText = () => {
       const { keyword, targetSelector } = action;
       if (!keyword.trim()) return;
-  
+
       // Get the target element to search within for this action
       const targetElement = document.querySelector(targetSelector);
       if (!targetElement) {
         console.warn(`Target element not found for selector: ${targetSelector} (keyword: ${keyword})`);
         return;
       }
-  
+
       const regex = new RegExp(`(${keyword})`, 'gi');
-      
+
       const walk = (node: Node) => {
         if (node.nodeType === 3) { // TEXT_NODE
           const parent = node.parentElement;
@@ -102,22 +102,22 @@
       };
 
       walk(targetElement);
-  
+
       // Add event listeners for this specific keyword
       addEventListeners();
     };
-  
+
     onMount(() => {
       console.log('Highlight.svelte component mounted for keyword:', action.keyword);
       highlightText();
     });
-  
+
     onDestroy(() => {
       // Clean up highlights when component is destroyed
       clearHighlights();
     });
   </script>
-  
+
   <div data-highlight-container class={props.class || ''}>
     <!-- This component doesn't render visible content, it just manages highlights -->
   </div>

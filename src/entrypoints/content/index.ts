@@ -2,7 +2,8 @@ import '@/app.css';
 import { mount } from "svelte";
 import Highlight from "@/lib/components/Highlight.svelte";
 import { extensionMessenger, websiteMessenger } from '@/utils/messaging';
-import { ActionType } from '@/utils/types';
+import { ActionType, AgentResult } from '@/utils/types';
+import { HIGHLIGHT_MARK_CLASS } from '@/utils/constants';
 
 export default defineContentScript({
   /* NOTE [RON]: we need to be careful setting this to true because many
@@ -12,6 +13,7 @@ export default defineContentScript({
   matches: ['*://*/*'],
   async main(ctx) {
     websiteMessenger.removeAllListeners();
+    injectAnimationStyles();
     console.log('Content script loaded', { id: browser.runtime.id, manifest: browser.runtime.getManifest() });
 
     const annotations = document.createElement('div');
@@ -21,8 +23,7 @@ export default defineContentScript({
     // ================================
     // Send Message to Background to Run
     // ================================
-    const cleanHTMLContent = extractCleanContent(document.body.outerHTML);
-    const results = await extensionMessenger.sendMessage('activate', cleanHTMLContent);
+    const results = await extensionMessenger.sendMessage('activate', extractVisibleDOM());
 
     results.forEach((result) => {
       console.log('result', result);
@@ -30,13 +31,8 @@ export default defineContentScript({
       result.actions.forEach((action) => {
         switch (action.type) {
           case ActionType.HIGHLIGHT:
-            const targetElement = document.querySelector(action.targetElement);
-            if (!targetElement) {
-              console.warn(`Target element not found for selector: ${action.targetElement}`);
-              return;
-            }
             mount(Highlight, {
-              target: targetElement,
+              target: annotations,
               context: new Map([["wxt:context", ctx]]),
               props: {
                 action: action,
@@ -52,84 +48,110 @@ export default defineContentScript({
   }
 });
 
-const extractCleanContent = (htmlString: string): string => {
-  // Create a temporary DOM element to parse the HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = htmlString;
+const injectAnimationStyles = () => {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes highlight-wipe-in {
+      from { background-size: 0% 100%; }
+      to { background-size: 100% 100%; }
+    }
 
-  // Elements to remove completely
-  const elementsToRemove = [
-    'script', 'style', 'noscript', 'iframe', 'embed', 'object',
-    'applet', 'canvas', 'svg', 'math', 'form', 'input', 'textarea',
-    'select', 'button', 'nav', 'header', 'footer', 'aside',
-    'meta', 'link', 'base', 'title', 'head', 'img', 'picture'
-  ];
+    .${HIGHLIGHT_MARK_CLASS} {
+      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.5), rgba(196, 181, 253, 0.5));
+      background-repeat: no-repeat;
+      background-size: 0% 100%;
+      border-bottom: 2px solid rgba(196, 181, 253, 1);
+      background-color: transparent;
+      color: inherit;
+      animation: highlight-wipe-in 0.4s ease-out forwards;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 3px;
+      padding: 1px 2px;
+    }
 
-  // Remove unwanted elements
-  elementsToRemove.forEach(tagName => {
-    const elements = tempDiv.querySelectorAll(tagName);
-    elements.forEach(el => el.remove());
-  });
+    .${HIGHLIGHT_MARK_CLASS}:hover {
+      background-image: linear-gradient(to right, rgba(196, 181, 253, 0.7), rgba(196, 181, 253, 0.7));
+      transform: scale(1.02);
+      box-shadow: 0 2px 8px rgba(196, 181, 253, 0.3);
+      border-radius: 4px;
+    }
+  `;
+  document.head.appendChild(style);
+};
 
-  // Remove elements with specific classes/attributes that are typically non-content
-  const nonContentSelectors = [
-    '[class*="ad"]', '[class*="banner"]', '[class*="sidebar"]',
-    '[class*="nav"]', '[class*="menu"]', '[class*="footer"]',
-    '[class*="header"]', '[class*="cookie"]', '[class*="popup"]',
-    '[class*="modal"]', '[class*="overlay"]', '[class*="tooltip"]',
-    '[data-ad]', '[data-banner]', '[aria-hidden="true"]',
-    '[style*="display: none"]', '[style*="visibility: hidden"]'
-  ];
+/**
+ * extractVisibleDOM – Return a "clean" HTML snapshot of what the user can see.
+ *
+ *  • Ignores <script>, <style>, <noscript>, <template>, <meta>, <link>, <head>.
+ *  • Skips elements hidden with `display:none`, `visibility:hidden`, zero-opacity,
+ *    zero-sized boxes, the `hidden` attribute, or off-screen positioning.
+ *  • Copies only two attributes (id, class); everything else is stripped.
+ *  • Collapses surplus whitespace so text matches what appears in the browser.
+ *
+ * @param {Document} doc  – Defaults to the current document; pass any DOM if needed.
+ * @returns {string}      – A full serialised HTML string (<html>…</html>).
+ */
+function extractVisibleDOM(doc = document) {
+  const ALLOWED_TAGS = new Set([
+    'HTML', 'BODY', 'DIV', 'P', 'SPAN', 'A', 'UL', 'OL', 'LI', 'TABLE', 'TR', 'TD', 'TH', 'THEAD', 'TBODY',
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'B', 'I', 'U', 'STRONG', 'EM', 'PRE', 'CODE', 'BLOCKQUOTE', 'MAIN',
+    'ARTICLE', 'SECTION', 'HEADER', 'FOOTER', 'NAV'
+  ]);
+  const ALLOWED_ATTRS = new Set(['id', 'class']);
 
-  nonContentSelectors.forEach(selector => {
-    const elements = tempDiv.querySelectorAll(selector);
-    elements.forEach(el => el.remove());
-  });
+  const newDoc = doc.documentElement.cloneNode(true) as HTMLElement;
 
-  // Remove inline styles and classes to clean up the HTML
-  const allElements = tempDiv.querySelectorAll('*');
-  allElements.forEach(el => {
-    // Remove style attributes
-    el.removeAttribute('style');
+  const elements = Array.from(newDoc.getElementsByTagName('*'));
 
-    // Remove class attributes (optional - comment out if you want to keep classes)
-    // el.removeAttribute('class');
+  for (const el of elements) {
+    if (!ALLOWED_TAGS.has(el.tagName)) {
+      el.parentNode?.removeChild(el);
+      continue;
+    }
 
-    // Remove data attributes (except data-* that might be important for content)
     const attributes = Array.from(el.attributes);
-    attributes.forEach(attr => {
-      if (attr.name.startsWith('data-') &&
-        !['data-content', 'data-text', 'data-value'].includes(attr.name)) {
+    for (const attr of attributes) {
+      if (!ALLOWED_ATTRS.has(attr.name.toLowerCase())) {
         el.removeAttribute(attr.name);
       }
-    });
-
-    // Remove event handlers
-    const eventAttributes = ['onclick', 'onload', 'onmouseover', 'onmouseout', 'onfocus', 'onblur'];
-    eventAttributes.forEach(attr => el.removeAttribute(attr));
-  });
-
-  // Get the cleaned HTML
-  let cleanHTML = tempDiv.innerHTML;
-
-  // Remove excessive whitespace and normalize
-  cleanHTML = cleanHTML
-    .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
-    .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
-    .replace(/>\s+</g, '><') // Remove whitespace between tags
-    .trim();
-
-  // Truncate if needed
-  if (cleanHTML.length > 15000) {
-    // Try to truncate at a word boundary
-    const truncated = cleanHTML.substring(0, 15000);
-    const lastSpace = truncated.lastIndexOf(' ');
-    if (lastSpace > 15000 * 0.8) { // Only truncate at word if it's not too far back
-      cleanHTML = truncated.substring(0, lastSpace) + '...';
-    } else {
-      cleanHTML = truncated + '...';
     }
   }
 
-  return cleanHTML;
-};
+  const walker = document.createTreeWalker(newDoc, NodeFilter.SHOW_TEXT);
+  const textNodesToRemove: Node[] = [];
+  let currentNode: Node | null;
+
+  while (currentNode = walker.nextNode()) {
+    if (currentNode.nodeValue) {
+      const trimmed = currentNode.nodeValue.trim().replace(/\s+/g, ' ');
+      if (trimmed) {
+        currentNode.nodeValue = trimmed;
+      } else {
+        textNodesToRemove.push(currentNode);
+      }
+    }
+  }
+
+  for (const node of textNodesToRemove) {
+    node.parentNode?.removeChild(node);
+  }
+
+  let removedInPass;
+  do {
+    removedInPass = 0;
+    const allElements = Array.from(newDoc.getElementsByTagName('*'));
+    for (const el of allElements) {
+      if (el.tagName === 'HTML' || el.tagName === 'BODY') {
+        continue;
+      }
+
+      if (el.children.length === 0 && (el.textContent || '').trim() === '') {
+        el.parentNode?.removeChild(el);
+        removedInPass++;
+      }
+    }
+  } while (removedInPass > 0);
+
+  return newDoc.outerHTML;
+}

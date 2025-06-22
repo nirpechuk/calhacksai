@@ -1,8 +1,9 @@
 <script lang="ts">
     import { AgentAction } from '@/utils/types';
+    import { onMount, onDestroy } from 'svelte';
     import { getContext } from 'svelte';
-    // Get WXT context if available
-    const ctx = getContext('wxt:context');
+    import { HIGHLIGHT_MARK_CLASS } from '@/utils/constants';
+    // Props - now takes a single action instead of an array
     let {
       action,
       ...props
@@ -10,28 +11,103 @@
       action: AgentAction;
       class?: string;
     }>();
-</script>
 
-<button
-  class="highlight-wipe-in w-full bg-gradient-to-r from-violet-300/50 to-violet-300/50 bg-no-repeat border-b-2 border-violet-300 bg-transparent cursor-pointer transition-all duration-200 ease-out rounded-[3px] px-0.5 py-px text-left hover:from-violet-300/70 hover:to-violet-300/70 hover:scale-[1.02] hover:shadow-[0_2px_8px_rgba(196,181,253,0.3)] hover:rounded-md {props.class}"
-  {...props}
->
-  {action.explanation}
-</button>
+    // Get WXT context if available
+    const ctx = getContext('wxt:context');
 
-<style>
-  @keyframes highlight-wipe-in {
-    from {
-      background-size: 0% 100%;
-    }
-    to {
-      background-size: 100% 100%;
-    }
-  }
+    const clearHighlights = () => {
+      // Only clear highlights for this specific keyword
+      const existingMarks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.content}"]`);
+      existingMarks.forEach(mark => {
+        const parent = mark.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+          parent.normalize(); // Merge adjacent text nodes
+        }
+      });
+    };
 
-  .highlight-wipe-in {
-    background-size: 0% 100%;
-    animation: highlight-wipe-in 0.4s ease-out forwards;
-  }
-</style>
+    const addEventListeners = () => {
+      // Find marks that contain this specific keyword
+      const marks = document.querySelectorAll(`mark[data-highlight="true"][data-keyword="${action.content}"]`);
+      marks.forEach(mark => {
+        const markText = mark.textContent || '';
+        // Only add listeners if this mark contains our keyword
+        if (markText.toLowerCase().includes(action.content.toLowerCase())) {
+          // Add hover event
+          if (action.onHover) {
+            mark.addEventListener('mouseenter', () => {
+              action.onHover!();
+            });
+          }
 
+          // Add click event
+          if (action.onClick) {
+            mark.addEventListener('click', () => {
+              action.onClick!();
+            });
+          }
+        }
+      });
+    };
+
+    const highlightText = () => {
+      const { content, targetElement } = action;
+      if (!content.trim()) return;
+
+      // Get the target element to search within for this action
+      const el = document.querySelector(targetElement);
+      if (!el) {
+        console.warn(`Target element not found for selector: ${targetElement} (content: ${content})`);
+        return;
+      }
+
+      const regex = new RegExp(`(${content})`, 'gi');
+
+      const walk = (node: Node) => {
+        if (node.nodeType === 3) { // TEXT_NODE
+          const parent = node.parentElement;
+          // Reject if parent is already highlighted or is content-editable
+          if (!parent || parent.closest(`.${HIGHLIGHT_MARK_CLASS}`) || parent.isContentEditable) {
+            return;
+          }
+          const nodeValue = node.nodeValue;
+          if (nodeValue && regex.test(nodeValue)) {
+            const span = document.createElement('span');
+            span.innerHTML = nodeValue.replace(regex, `<mark class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true" data-content="${content}">$1</mark>`);
+            node.parentNode!.replaceChild(span, node);
+          }
+        } else if (node.nodeType === 1) { // ELEMENT_NODE
+          const el = node as HTMLElement;
+          // Do not traverse into certain elements
+          if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.isContentEditable || el.closest(`.${HIGHLIGHT_MARK_CLASS}`)) {
+            return;
+          }
+          // Traverse children
+          const children = Array.from(node.childNodes);
+          for (const child of children) {
+            walk(child);
+          }
+        }
+      };
+
+      walk(el);
+
+      // Add event listeners for this specific keyword
+      addEventListeners();
+    };
+
+    onMount(() => {
+      console.log('Highlight.svelte component mounted:', action);
+      highlightText();
+    });
+
+    onDestroy(() => {
+      // Clean up highlights when component is destroyed
+      clearHighlights();
+    });
+  </script>
+
+  <div data-highlight-container class={props.class || ''}>
+    <!-- This component doesn't render visible content, it just manages highlights -->
+  </div>

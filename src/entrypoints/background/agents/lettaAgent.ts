@@ -4,16 +4,11 @@ import { Agent } from './agent';
 
 
 export class LettaAgent extends Agent {
-  private client: LettaClient;
+  private client?: LettaClient;
   private lettaAgentId: string;
 
   constructor(agentId: string, mission: string) {
     super(mission);
-    // Initialize with default Letta Cloud configuration
-    this.client = new LettaClient({
-      baseUrl: 'https://app.letta.com',
-      token: '',
-    });
     this.lettaAgentId = agentId;
   }
 
@@ -39,16 +34,28 @@ export class LettaAgent extends Agent {
    * Get fact-checking actions from the Letta agent based on DOM analysis
    */
   async getActions(dom: string): Promise<AgentResult> {
-    if (!this.isInitialized) {
+    if (!this.isInitialized || !this.client) {
       throw new Error('Letta fact checker agent not initialized. Call initialize() first.');
     }
     try {
       const content = this.getMessage(dom);
 
       console.log('Sending message to agent:', this.lettaAgentId);
-      console.log('Message content length:', content.length);
+      console.log(`Message content (len: ${content.length}):\n${content}`);
 
       await this.client.agents.messages.reset(this.lettaAgentId);
+
+      // let run = await this.client.agents.messages.createAsync(this.lettaAgentId, {
+      //   messages: [
+      //     { role: 'user', content },
+      //   ],
+      // });
+
+      // // poll the run status every 1 second
+      // while (run.status !== 'completed' && run.id) {
+      //   await new Promise(resolve => setTimeout(resolve, 1000));
+      //   run = await this.client.runs.retrieve(run.id);
+      // }
 
       // Send message to Letta agent with unique timestamp to prevent loops
       const response = await this.client.agents.messages.create(this.lettaAgentId, {
@@ -57,8 +64,7 @@ export class LettaAgent extends Agent {
         ],
       });
 
-      console.log('Response receivedt:', JSON.stringify(response, null, 2));
-
+      console.log('Response received:', JSON.stringify(response, null, 2));
 
       // Extract the assistant's response
       let assistantContent = '';
@@ -104,13 +110,12 @@ export class LettaAgent extends Agent {
       };
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error getting actions from Letta agent:', errorMessage);
+      console.error('Error getting actions from Letta agent:\n', error);
 
       return {
         success: false,
         actions: [],
-        errors: [errorMessage],
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
       };
     }
   }

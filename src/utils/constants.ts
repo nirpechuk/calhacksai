@@ -63,3 +63,5 @@ export const agentActionSchema = {
         }
     }
 } as const;
+
+export const HIGHLIGHT_MARK_CLASS = 'text-highlighter-mark';

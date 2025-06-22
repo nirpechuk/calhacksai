@@ -5,11 +5,11 @@
  * Run with: npm run test:letta
  */
 
-import { createLettaFactCheckerAgent } from './lettaAgent';
+import { createLettaAgent } from './lettaAgent';
 import dotenv from 'dotenv';
 
 // Load environment variables from .env file
-dotenv.config();
+dotenv.config(); 
 
 async function testLettaAgent() {
   console.log('🧪 Testing Letta Fact Checker Agent...\n');
@@ -20,7 +20,7 @@ async function testLettaAgent() {
     if (!agentId) {
       throw new Error('LETTA_AGENT_ID environment variable is required. Create an agent in Letta console and get its ID.');
     }
-    const agent = createLettaFactCheckerAgent(agentId);
+    const agent = createLettaAgent(agentId);
     console.log('✅ Agent created successfully with ID: ', agentId);
 
     // Initialize with API key
@@ -44,7 +44,9 @@ async function testLettaAgent() {
     `;
 
     console.log('\n🔍 Testing fact-checking analysis...');
-    const result = await agent.getActions(testDom);
+
+    const prompt = 'You are a fact checker.You will investigate all facts that are even slightly non-reputable by using the web_search tool and finding respectable, trusted sources (not forums or blogs) speaking on the matter. However, only run 1-2 successful web_search functions for each fact, because you don\'t want to run for too long. Make sure to use the tool properly and pay special attention to your request.'
+    const result = await agent.getActions(testDom, prompt);
 
     if (result.success) {
       console.log('✅ Analysis completed successfully');

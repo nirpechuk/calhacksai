@@ -6,12 +6,11 @@
  * to analyze web pages for misinformation and return structured annotations.
  */
 
-import { IAgent, AgentResult } from '../types/agent';
+import { IAgent, AgentResult, validateAgentActions } from '../types/agent';
 import { LettaClient } from '@letta-ai/letta-client';
-import { validateAgentActions } from './validation';
 
 
-export class LettaFactCheckerAgent implements IAgent {
+export class LettaAgent implements IAgent {
   private client: LettaClient;
   private agentId?: string;
   private isInitialized = false;
@@ -52,7 +51,7 @@ export class LettaFactCheckerAgent implements IAgent {
   /**
    * Get fact-checking actions from the Letta agent based on DOM analysis
    */
-  async getActions(dom: string, prompt: string = ''): Promise<AgentResult> {
+  async getActions(dom: string, prompt: string): Promise<AgentResult> {
     if (!this.isInitialized) {
       throw new Error('Letta fact checker agent not initialized. Call initialize() first.');
     }
@@ -62,18 +61,24 @@ export class LettaFactCheckerAgent implements IAgent {
     }
 
     try {
-      // Prepare the message content, currently not using the prompt
-      const messageContent = dom;
+      // Prepare the message content
+      const messageContent = `Your purpose: ${prompt} Remember to use the output format exactly as specified in the JSON schema. Anyways, here is the DOM:\n\n${dom}`;
+      
+      console.log('Sending message to agent:', this.agentId);
+      console.log('Message content length:', messageContent.length);
 
-      // Send message to Letta agent
+      // Send message to Letta agent with unique timestamp to prevent loops
       const response = await this.client.agents.messages.create(this.agentId, {
         messages: [
           {
             role: 'user',
-            content: messageContent,
+            content: `[${new Date().toISOString()}] ${messageContent}`,
           },
         ],
       });
+
+      console.log('Response received, message count:', response.messages.length);
+      console.log('Message types:', response.messages.map(m => m.messageType));
 
       // Extract the assistant's response
       let assistantContent = '';
@@ -94,6 +99,8 @@ export class LettaFactCheckerAgent implements IAgent {
       if (!assistantContent) {
         throw new Error('No assistant response received from Letta agent');
       }
+
+      console.log("Raw assistantContent: ", assistantContent);
 
       // Try to parse JSON from the response
       let parsedData: any;
@@ -155,6 +162,6 @@ export class LettaFactCheckerAgent implements IAgent {
 /**
  * Create a new Letta fact checker agent instance
  */
-export function createLettaFactCheckerAgent(agentId: string): LettaFactCheckerAgent {
-  return new LettaFactCheckerAgent(agentId);
+export function createLettaAgent(agentId: string): LettaAgent {
+  return new LettaAgent(agentId);
 }

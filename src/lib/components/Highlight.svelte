@@ -1,33 +1,29 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  const ANIMATION_STYLE_ID = 'text-highlighter-animation-style';
+  import { onMount, onDestroy } from 'svelte';
+  import { getContext } from 'svelte';
+
+  // Define the structure for highlight actions
+  interface HighlightAction {
+    keyword: string;
+    targetSelector: string;
+    onHover?: () => void;
+    onClick?: () => void;
+  }
+
+  // Props
+  let {
+    actions = [{ keyword: "Svelte", targetSelector: "body" }], // Array of highlight actions
+    ...props
+  } = $props<{
+    actions?: HighlightAction[];
+    class?: string;
+  }>();
+
+  // Get WXT context if available
+  const ctx = getContext('wxt:context');
+
+  // Use the same constants as defined in content.ts
   const HIGHLIGHT_MARK_CLASS = 'text-highlighter-mark';
-
-  // Inject the CSS needed for the animation into the page's head.
-  const injectAnimationStyles = () => {
-    if (document.getElementById(ANIMATION_STYLE_ID)) {
-      return; // Styles already injected
-    }
-    const style = document.createElement('style');
-    style.id = ANIMATION_STYLE_ID;
-    style.textContent = `
-      @keyframes highlight-wipe-in {
-        from { background-size: 0% 100%; }
-        to { background-size: 100% 100%; }
-      }
-
-      .${HIGHLIGHT_MARK_CLASS} {
-        background-image: linear-gradient(to right, rgba(196, 181, 253, 0.5), rgba(196, 181, 253, 0.5));
-        background-repeat: no-repeat;
-        background-size: 0% 100%;
-        border-bottom: 2px solid rgba(196, 181, 253, 1);
-        background-color: transparent;
-        color: inherit;
-        animation: highlight-wipe-in 0.4s ease-out forwards;
-      }
-    `;
-    document.head.appendChild(style);
-  };
 
   const clearHighlights = () => {
     const existingMarks = document.querySelectorAll(`mark[data-highlight="true"]`);
@@ -40,46 +36,111 @@
     });
   };
 
-  const highlightText = (keyword: string) => {
-    if (!keyword.trim()) return;
+  const addEventListeners = (keyword: string, onHover?: () => void, onClick?: () => void) => {
+    // Find marks that contain this specific keyword
+    const marks = document.querySelectorAll(`mark[data-highlight="true"]`);
+    marks.forEach(mark => {
+      const markText = mark.textContent || '';
+      // Only add listeners if this mark contains our keyword
+      if (markText.toLowerCase().includes(keyword.toLowerCase())) {
+        // Add hover event
+        if (onHover) {
+          mark.addEventListener('mouseenter', () => {
+            onHover();
+          });
+        }
 
-    const regex = new RegExp(`(${keyword})`, 'gi');
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (node) => {
-          const parent = node.parentElement;
-          if (parent?.closest(`.${HIGHLIGHT_MARK_CLASS}`) || parent?.tagName === 'SCRIPT' || parent?.tagName === 'STYLE' || parent?.isContentEditable) {
-            return NodeFilter.FILTER_REJECT;
-          }
-          if (!node.nodeValue?.trim() || !regex.test(node.nodeValue)) {
-            return NodeFilter.FILTER_SKIP;
-          }
-          return NodeFilter.FILTER_ACCEPT;
-        },
+        // Add click event
+        if (onClick) {
+          mark.addEventListener('click', () => {
+            onClick();
+          });
+        }
       }
-    );
-
-    const nodesToHighlight: Text[] = [];
-    while (walker.nextNode()) {
-      nodesToHighlight.push(walker.currentNode as Text);
-    }
-
-    for (const node of nodesToHighlight) {
-      const span = document.createElement('span');
-      const nodeValue = node.nodeValue;
-      if (nodeValue) {
-        span.innerHTML = nodeValue.replace(regex, `<mark class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true">$1</mark>`);
-        node.parentNode?.replaceChild(span, node);
-      }
-    }
+    });
   };
 
+  const highlightText = (actions: HighlightAction[]) => {
+    if (!actions.length) return;
+
+    // Clear existing highlights first
+    clearHighlights();
+
+    // Process each action
+    actions.forEach(action => {
+      const { keyword, targetSelector, onHover, onClick } = action;
+      if (!keyword.trim()) return;
+
+      // Get the target element to search within for this action
+      const targetElement = document.querySelector(targetSelector);
+      if (!targetElement) {
+        console.warn(`Target element not found for selector: ${targetSelector} (keyword: ${keyword})`);
+        return;
+      }
+
+      // Get all text nodes within the target element
+      const textNodes: Text[] = [];
+      const walker = document.createTreeWalker(
+        targetElement,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: (node) => {
+            // Skip if parent is already highlighted or is a script/style
+            const parent = node.parentElement;
+            if (parent?.closest(`.${HIGHLIGHT_MARK_CLASS}`) ||
+                parent?.tagName === 'SCRIPT' ||
+                parent?.tagName === 'STYLE' ||
+                parent?.isContentEditable) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            // Skip empty text nodes
+            if (!node.nodeValue?.trim()) {
+              return NodeFilter.FILTER_SKIP;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          },
+        }
+      );
+
+      // Collect all text nodes for this target
+      while (walker.nextNode()) {
+        textNodes.push(walker.currentNode as Text);
+      }
+
+      const regex = new RegExp(`(${keyword})`, 'gi');
+
+      textNodes.forEach(node => {
+        const nodeValue = node.nodeValue;
+        if (nodeValue && regex.test(nodeValue)) {
+          const span = document.createElement('span');
+          span.innerHTML = nodeValue.replace(regex, `<mark class="${HIGHLIGHT_MARK_CLASS}" data-highlight="true" data-keyword="${keyword}">$1</mark>`);
+          node.parentNode?.replaceChild(span, node);
+        }
+      });
+
+      // Add event listeners for this specific keyword
+      addEventListeners(keyword, onHover, onClick);
+    });
+  };
+
+  // Watch for actions changes
+  $effect(() => {
+    if (actions.length) {
+      highlightText(actions);
+    }
+  });
+
   onMount(() => {
-    console.log('Highlight.svelte component mounted, highlighting "Svelte".');
-    injectAnimationStyles();
-    // TODO @ann: get the keyword to highlight from LLM actions
-    highlightText("Svelte");
+    console.log('Highlight.svelte component mounted, highlighting actions:', actions);
+    highlightText(actions);
+  });
+
+  onDestroy(() => {
+    // Clean up highlights when component is destroyed
+    clearHighlights();
   });
 </script>
+
+<div data-highlight-container class={props.class || ''}>
+  <!-- This component doesn't render visible content, it just manages highlights -->
+</div>

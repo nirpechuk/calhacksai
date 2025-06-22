@@ -4,7 +4,7 @@ An agentic browser extension to tell you the whole truth.
 
 ## Setup
 
-We used [WXT](https://wxt.dev/), [Svelte`(https://svelte.dev/)] and [PNPM](https://pnpm.io/) to build this project.
+We used [WXT](https://wxt.dev/), [Svelte](https://svelte.dev/) and [PNPM](https://pnpm.io/) to build this project.
 
 To get started, run `pnpm install` to install the dependencies and `pnpm dev` to start the development server.
 

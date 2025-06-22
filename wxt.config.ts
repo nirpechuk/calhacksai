@@ -35,6 +35,6 @@ export default defineConfig({
   }),
 
   runner: {
-    startUrls: ['https://www.google.com']
+    startUrls: ['https://www.nbcnews.com/news/us-news/minnesota-lobbyist-arrested-allegedly-sending-threatening-texts-rcna214283']
   }
 });

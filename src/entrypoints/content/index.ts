@@ -29,21 +29,40 @@ export default defineContentScript({
     // const results = await extensionMessenger.sendMessage('activate', extractVisibleDOM());
 
     // // Simulate loading delay for demonstration
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 6000));
 
     const results: AgentResult[] = [
       {
         success: true,
         actions: [
           {
-            type: ActionType.HIGHLIGHT,
-            targetElement: '#p_1_1',
-            content: 'unidentified purported expert on biowarfare',
+            type: ActionType.ADD_NOTE,
+            targetElement: '#p_1_9',
+            content: 'I believe the Chinese response was exactly what a country would do if they were attacked with a bioweapon which explains a lot of their actions.',
             confidence: 0.9,
-            severity: 0.9,
-            explanation: 'This is a test',
-            sources: ['https://github.com/users/nirpechuk/projects/2/views/1']
-          },
+            severity: 0.8,
+            explanation: "This is a speculative claim that aligns with a disproven conspiracy theory. China's strict lockdown and public health measures were a response to a novel, rapidly spreading coronavirus. There is no evidence to support the claim that the virus was a bioweapon.",
+            sources: ['https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8300139/']
+          }
+        ]
+      },
+      {
+        success: true,
+        actions: [
+          {
+            type: ActionType.HIGHLIGHT,
+            targetElement: '#p_1_3',
+            content: 'I have zero proof other than my gut feeling that this is a bioweapon.',
+            confidence: 0.9,
+            severity: 0.8,
+            explanation: "This claim is based on 'gut feeling' and not evidence, which is a red flag for misinformation.",
+            sources: []
+          }
+        ]
+      },
+      {
+        success: true,
+        actions: [
           {
             type: ActionType.UNDERLINE,
             targetElement: '#p_1_2',
@@ -55,12 +74,26 @@ export default defineContentScript({
           },
           {
             type: ActionType.ADD_NOTE,
-            targetElement: '#p_1_3',
-            content: 'I’ll throw my 2 cents in here.',
-            confidence: 0.9,
+            targetElement: '#p_1_5',
+            content: 'If, in fact, the US has 5 strains currently and China only one then it must have been percolating in the US for some time before it arose in China. ',
+            confidence: 0.95,
+            severity: 0.7,
+            explanation: 'This is a false claim. Extensive genomic research has shown that the initial SARS-CoV-2 outbreak in Wuhan was genetically diverse, and the virus strains that spread globally, including to the US, originated from there. The idea that the virus was circulating in the US first is not supported by scientific evidence.',
+            sources: ['https://www.nature.com/articles/s41586-021-04188-6']
+          }
+        ]
+      },
+      {
+        success: true,
+        actions: [
+          {
+            type: ActionType.HIGHLIGHT,
+            targetElement: '#p_1_13',
+            content: 'The swineflu was likewise proven to be lab made at least in sources other than mainstream and WHO, the same was the case with Ebola, and even HIV.',
+            confidence: 0.98,
             severity: 0.9,
-            explanation: 'This is a test note',
-            sources: ['https://github.com/users/nirpechuk/projects/2/views/1']
+            explanation: 'This statement makes multiple false claims. The scientific consensus is that Swine Flu (H1N1), Ebola, and HIV all have natural origins.',
+            sources: ['https://www.cdc.gov/h1n1flu/what-is-h1n1.htm', 'https://www.cdc.gov/vhf/ebola/about.html']
           }
         ]
       }
@@ -141,34 +174,34 @@ const injectAnimationStyles = () => {
     }
 
     @keyframes truely-gemini-pulse {
-      0%, 100% { 
+      0%, 100% {
         opacity: 0.3;
         transform: scale(1);
       }
-      50% { 
+      50% {
         opacity: 0.8;
         transform: scale(1.05);
       }
     }
 
     @keyframes truely-gemini-color {
-      0% { 
+      0% {
         background: linear-gradient(45deg, #667eea, #764ba2);
         box-shadow: 0 0 20px rgba(102, 126, 234, 0.44);
       }
-      25% { 
+      25% {
         background: linear-gradient(45deg, #6366f1, #7c3aed);
         box-shadow: 0 0 20px rgba(99, 102, 241, 0.44);
       }
-      50% { 
+      50% {
         background: linear-gradient(45deg, #6d28d9, #8b5cf6);
         box-shadow: 0 0 20px rgba(109, 40, 217, 0.44);
       }
-      75% { 
+      75% {
         background: linear-gradient(45deg, #7c3aed, #6366f1);
         box-shadow: 0 0 20px rgba(124, 58, 237, 0.44);
       }
-      100% { 
+      100% {
         background: linear-gradient(45deg, #667eea, #764ba2);
         box-shadow: 0 0 20px rgba(102, 126, 234, 0.44);
       }

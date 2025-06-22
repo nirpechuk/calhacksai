@@ -16,6 +16,7 @@
     "test:letta": "npx tsx src/entrypoints/background/agents/lettaAgentTest.ts"
   },
   "dependencies": {
+    "@webext-core/messaging": "^2.3.0",
     "@letta-ai/letta-client": "^0.1.132",
     "dotenv": "^16.5.0",
     "mode-watcher": "^1.0.8",

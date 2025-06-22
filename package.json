@@ -16,6 +16,7 @@
     "test:letta": "npx tsx src/entrypoints/background/agents/lettaAgentTest.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
     "@letta-ai/letta-client": "^0.1.132",
     "@webext-core/messaging": "^2.3.0",
     "dotenv": "^16.5.0",

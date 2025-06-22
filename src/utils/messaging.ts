@@ -5,7 +5,7 @@ import { defineWindowMessaging } from '@webext-core/messaging/page';
 
 interface ProtocolMap {
     // TODO: add api schema here
-    activate(): void;
+    activate(dom: string): void;
     highlight(selector: string): void;
 }
 

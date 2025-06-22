@@ -63,9 +63,11 @@ export class LettaAgent implements IAgent {
     try {
       // Prepare the message content
       const messageContent = `Your purpose: ${prompt} Remember to use the output format exactly as specified in the JSON schema. Anyways, here is the DOM:\n\n${dom}`;
-      
+
       console.log('Sending message to agent:', this.agentId);
       console.log('Message content length:', messageContent.length);
+
+      await this.client.agents.messages.reset(this.agentId);
 
       // Send message to Letta agent with unique timestamp to prevent loops
       const response = await this.client.agents.messages.create(this.agentId, {
@@ -128,7 +130,7 @@ export class LettaAgent implements IAgent {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Error getting actions from Letta agent:', errorMessage);
-      
+
       return {
         success: false,
         actions: [],

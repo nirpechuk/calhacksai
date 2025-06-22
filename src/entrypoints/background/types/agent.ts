@@ -5,9 +5,6 @@
  * that analyzes web pages for misinformation and provides annotations.
  */
 
-// ============================================================================
-// ENUMS AND CONSTANTS
-// ============================================================================
 
 /**
  * Types of actions that agents can perform
@@ -17,11 +14,6 @@ export enum ActionType {
   UNDERLINE = 'underline',
   ADD_NOTE = 'add_note'
 }
-
-// ============================================================================
-// CORE TYPES
-// ============================================================================
-
 /**
  * Represents an action that an agent wants to perform
  */
@@ -43,10 +35,6 @@ export type AgentResult = {
   actions: AgentAction[];
   errors?: string[];
 };
-
-// ============================================================================
-// MAIN AGENT INTERFACE
-// ============================================================================
 
 /**
  * Core interface that all agents must implement

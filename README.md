@@ -1,6 +1,6 @@
 # Truely AI
 
-An agentic browser extension to tell you the whole truth.
+An agentic browser extension to tell you the whole truth. See our devpost [here](https://devpost.com/software/truely-7cys9i).
 
 ## Setup
 
